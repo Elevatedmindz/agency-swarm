@@ -130,7 +130,7 @@ if index_name not in pc.list_indexes().names():
         name=index_name,
         dimension=1536,  # Typical for OpenAI embeddings
         metric="euclidean",  # Choose a suitable metric
-        spec=ServerlessSpec(cloud="aws", region="us-west-2")  # Adjust region as needed
+        spec=ServerlessSpec(cloud="aws", region="us-east-1")  # Adjust region as needed
     )
 
 # Run the bot
