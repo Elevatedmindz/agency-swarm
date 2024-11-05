@@ -47,7 +47,7 @@ eve_agent = Agent(
 
 # Define an Agency for managing communication flow
 agency = Agency(
-    agents=[shadow_agent, echo_agent, lyra_agent, eve_agent],
+    [shadow_agent, echo_agent, lyra_agent, eve_agent],
     shared_instructions="Guidelines for managing tasks and coordinating cross-agent interactions."
 )
 
