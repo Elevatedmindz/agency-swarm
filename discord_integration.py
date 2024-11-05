@@ -122,7 +122,7 @@ async def on_message(message):
 pc = Pinecone(api_key=PINECONE_API_KEY)
 
 # Example: Creating a Pinecone index (you can adjust based on your project needs)
-index_name = "elevatedfx_index"  # Replace with your desired index name
+index_name = "elevatedfx-index"  # Replace with your desired index name
 
 # Check if the index already exists, create if it doesn’t
 if index_name not in pc.list_indexes().names():
