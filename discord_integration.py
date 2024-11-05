@@ -2,11 +2,15 @@ import os
 import discord
 from discord.ext import commands
 from agency_swarm import Agent, Agency
-from dotenv import load_dotenv
+import pinecone
 
-# Load environment variables
-load_dotenv()
+# Load environment variables directly from Render’s environment
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+NOTION_TOKEN = os.getenv("NOTION_TOKEN")
+NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+PINECONE_ENVIRONMENT = os.getenv("PINECONE_ENVIRONMENT")
 
 # Initialize the main Agency Swarm agents
 shadow_agent = Agent(
@@ -53,18 +57,8 @@ async def on_message(message):
         response = agency.agents[1].process_input(user_question)  # Calls Echo for support queries
         await message.channel.send(response)
 
-# Run the bot
-bot.run(DISCORD_TOKEN)
-
-
-import pinecone
-import os
-from dotenv import load_dotenv
-
-load_dotenv()  # Load environment variables from .env
-
 # Initialize Pinecone
-pinecone.init(api_key=os.getenv("PINECONE_API_KEY"), environment=os.getenv("PINECONE_ENVIRONMENT"))
+pinecone.init(api_key=PINECONE_API_KEY, environment=PINECONE_ENVIRONMENT)
 
 # Example: Creating a Pinecone index (you can adjust based on your project needs)
 index_name = "your_index_name"  # Replace with your desired index name
@@ -72,3 +66,6 @@ index_name = "your_index_name"  # Replace with your desired index name
 # Check if the index already exists, create if it doesn’t
 if index_name not in pinecone.list_indexes():
     pinecone.create_index(index_name, dimension=1536)  # 1536 is typical for OpenAI embeddings
+
+# Run the bot
+bot.run(DISCORD_TOKEN)
