@@ -6,6 +6,11 @@ from agency_swarm.agents.Shadow.ShadowAgent import ShadowAgent
 from agency_swarm.agents.Echo.EchoAgent import EchoAgent
 from agency_swarm.agents.Lyra.LyraAgent import LyraAgent
 from agency_swarm.agents.Eve.EveAgent import EveAgent
+from agency_swarm.agents.Nova.NovaAgent import NovaAgent
+from agency_swarm.agents.Miles.MilesAgent import MilesAgent
+from agency_swarm.agents.Aiden.AidenAgent import AidenAgent
+from agency_swarm.agents.Ace.AceAgent import AceAgent
+from agency_swarm.agents.Scout.ScoutAgent import ScoutAgent
 from pinecone import Pinecone, ServerlessSpec
 
 # Load environment variables directly from Render’s environment
@@ -21,10 +26,15 @@ shadow_agent = ShadowAgent()
 echo_agent = EchoAgent()
 lyra_agent = LyraAgent()
 eve_agent = EveAgent()
+nova_agent = NovaAgent()
+miles_agent = MilesAgent()
+aiden_agent = AidenAgent()
+ace_agent = AceAgent()
+scout_agent = ScoutAgent()
 
 # Define an Agency for managing communication flow between agents
 agency = Agency(
-    agents=[shadow_agent, echo_agent, lyra_agent, eve_agent],
+    agents=[shadow_agent, echo_agent, lyra_agent, eve_agent, nova_agent, miles_agent, aiden_agent, ace_agent, scout_agent],
     shared_instructions="Guidelines for managing tasks and coordinating cross-agent interactions."
 )
 
@@ -35,7 +45,12 @@ trigger_phrases = [
     "trading psychology",
     "mindset",
     "community event",
-    "how do I"
+    "how do I",
+    "content creation",
+    "data analysis",
+    "marketing",
+    "project management",
+    "market analysis"
 ]
 
 # Discord bot setup with relevant intents
@@ -77,6 +92,26 @@ async def on_message(message):
                     response = await lyra_agent.process_input(
                         f"{message.author.mention}, it looks like you're curious about community events! Lyra can provide more details on upcoming activities."
                     )
+                elif "content creation" in user_question:
+                    response = await nova_agent.process_input(
+                        f"{message.author.mention}, need help with content creation? Nova has some ideas!"
+                    )
+                elif "data analysis" in user_question:
+                    response = await miles_agent.process_input(
+                        f"{message.author.mention}, looking for data insights? Miles can assist with analytics!"
+                    )
+                elif "marketing" in user_question:
+                    response = await aiden_agent.process_input(
+                        f"{message.author.mention}, let's talk marketing. Aiden is here to plan your next big move!"
+                    )
+                elif "market analysis" in user_question:
+                    response = await ace_agent.process_input(
+                        f"{message.author.mention}, interested in market trends? Ace has got the insights!"
+                    )
+                elif "project management" in user_question:
+                    response = await scout_agent.process_input(
+                        f"{message.author.mention}, need help with organizing tasks? Scout is here to manage projects!"
+                    )
                 else:
                     response = await shadow_agent.process_input(
                         f"{message.author.mention}, how can I assist you today?"
@@ -89,6 +124,16 @@ async def on_message(message):
                 response = await eve_agent.process_input(user_question)
             elif "community" in user_question or "event" in user_question:
                 response = await lyra_agent.process_input(user_question)
+            elif "content creation" in user_question:
+                response = await nova_agent.process_input(user_question)
+            elif "data analysis" in user_question:
+                response = await miles_agent.process_input(user_question)
+            elif "marketing" in user_question:
+                response = await aiden_agent.process_input(user_question)
+            elif "market analysis" in user_question:
+                response = await ace_agent.process_input(user_question)
+            elif "project management" in user_question:
+                response = await scout_agent.process_input(user_question)
             else:
                 response = await shadow_agent.process_input(user_question)
 
