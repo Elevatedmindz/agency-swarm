@@ -3,6 +3,9 @@ import re
 from agency_swarm.agents import Agent
 from agency_swarm.tools import FileSearch
 from agency_swarm.util.validators import llm_validator
+from agency_swarm.tools.airtable_hub_tool import AirtableHubTool
+from agency_swarm.tools.n8n_workflow_tool import N8NWorkflowTool
+
 
 
 class ShadowAgent(Agent):
@@ -11,10 +14,10 @@ class ShadowAgent(Agent):
             name="Shadow",
             description="Shadow is the lead operations coordinator, responsible for managing user interactions and guiding through ElevatedFX resources.",
             instructions="./instructions.md",
-            files_folder="./files",
-            schemas_folder="./schemas",
-            tools=[AirtableHubTool, N8NWorkflowTool],
-            tools_folder="./tools",
+            files_folder=None,
+            schemas_folder=None,
+            tools=[],
+            tools_folder=None,
             validation_attempts=1,
             temperature=0.5,  # Adjusted for a more conversational tone
             max_prompt_tokens=25000,
