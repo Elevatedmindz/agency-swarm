@@ -23,23 +23,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Load and verify environment variables
-required_env_vars = {
-    "DISCORD_TOKEN": os.getenv("DISCORD_TOKEN"),
-    "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
-    "NOTION_TOKEN": os.getenv("NOTION_TOKEN"),
-    "NOTION_DATABASE_ID": os.getenv("NOTION_DATABASE_ID"),
-    "PINECONE_API_KEY": os.getenv("PINECONE_API_KEY"),
-    "PINECONE_ENVIRONMENT": os.getenv("PINECONE_ENVIRONMENT")
-}
+# Load environment variables directly from Render's environment
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+NOTION_TOKEN = os.getenv("NOTION_TOKEN")
+NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+PINECONE_ENVIRONMENT = os.getenv("PINECONE_ENVIRONMENT")
 
-for var_name, value in required_env_vars.items():
-    if not value:
-        logger.error(f"ERROR: {var_name} is missing. Check your environment variables.")
-        exit(1)
-    logger.info(f"{var_name} is loaded successfully.")
+# Verify environment variables
+if not DISCORD_TOKEN:
+    logger.error("ERROR: DISCORD_TOKEN is missing. Check your environment variables.")
+    exit(1)
+else:
+    logger.info("DISCORD_TOKEN is loaded.")
 
-# Initialize agents with error handling
+# Initialize specific agents for Discord roles
 try:
     shadow_agent = ShadowAgent()
     echo_agent = EchoAgent()
@@ -56,7 +55,7 @@ except Exception as e:
     logger.error(traceback.format_exc())
     exit(1)
 
-# Define agency chart
+# Define agency_chart with the appropriate hierarchy or communication flow
 agency_chart = [
     shadow_agent,
     [shadow_agent, echo_agent],
@@ -69,7 +68,7 @@ agency_chart = [
     [shadow_agent, scout_agent]
 ]
 
-# Initialize Agency with error handling
+# Initialize the Agency
 try:
     agency = Agency(
         agency_chart=agency_chart,
@@ -81,31 +80,24 @@ except Exception as e:
     logger.error(traceback.format_exc())
     exit(1)
 
-# Define trigger phrases
+# Define trigger phrases for proactive help
 trigger_phrases = [
     "I need help", "when is the next live call", "trading psychology", "mindset",
     "community event", "how do I", "content creation", "data analysis",
     "marketing", "project management", "market analysis"
 ]
 
-# Discord bot setup
+# Discord bot setup with relevant intents
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-@bot.event
-async def on_ready():
-    logger.info(f'Bot logged in as {bot.user}')
-    logger.info(f'Bot is connected to the following guilds:')
-    for guild in bot.guilds:
-        logger.info(f'- {guild.name} (id: {guild.id})')
-
 async def process_message_with_timeout(agent, question, timeout=30):
     """Process message with timeout to prevent hanging"""
     try:
         response = await asyncio.wait_for(
-            agent.process_input(question),
+            agent.execute(question),  # Changed from process_input to execute
             timeout=timeout
         )
         return response
@@ -116,6 +108,13 @@ async def process_message_with_timeout(agent, question, timeout=30):
         logger.error(f"Error processing message: {str(e)}")
         logger.error(traceback.format_exc())
         return None
+
+@bot.event
+async def on_ready():
+    logger.info(f'Bot logged in as {bot.user}')
+    logger.info(f'Bot is connected to the following guilds:')
+    for guild in bot.guilds:
+        logger.info(f'- {guild.name} (id: {guild.id})')
 
 @bot.event
 async def on_message(message):
@@ -155,29 +154,23 @@ async def on_message(message):
         except:
             logger.error("Failed to send error message to channel")
 
-# Initialize Pinecone with error handling
+# Initialize Pinecone with improved error handling
 try:
-    pc = Pinecone(api_key=required_env_vars["PINECONE_API_KEY"])
+    pc = Pinecone(api_key=PINECONE_API_KEY)
     index_name = "elevatedfx-index"
 
     if index_name not in pc.list_indexes().names():
-        logger.info(f"Creating new Pinecone index: {index_name}")
         pc.create_index(
             name=index_name,
             dimension=1536,
             metric="euclidean",
-            spec=ServerlessSpec(cloud="aws", region=required_env_vars["PINECONE_ENVIRONMENT"])
+            spec=ServerlessSpec(cloud="aws", region=PINECONE_ENVIRONMENT)
         )
     logger.info("Pinecone initialized successfully")
 except Exception as e:
     logger.error(f"Error initializing Pinecone: {str(e)}")
     logger.error(traceback.format_exc())
-    # Continue without Pinecone as it might not be critical for core functionality
 
-# Run the bot with error handling
+# Run the bot
 logger.info("Starting Discord bot...")
-try:
-    bot.run(required_env_vars["DISCORD_TOKEN"])
-except Exception as e:
-    logger.error(f"Failed to start bot: {str(e)}")
-    logger.error(traceback.format_exc())
+bot.run(DISCORD_TOKEN)
