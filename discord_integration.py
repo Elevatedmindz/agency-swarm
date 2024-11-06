@@ -125,19 +125,22 @@ async def on_message(message):
         print(f"Error processing message: {e}")
 
 # Initialize Pinecone
-pc = Pinecone(api_key=PINECONE_API_KEY)
+try:
+    pc = Pinecone(api_key=PINECONE_API_KEY)
 
-# Example: Creating a Pinecone index (you can adjust based on your project needs)
-index_name = "elevatedfx-index"  # Replace with your desired index name
+    # Example: Creating a Pinecone index (you can adjust based on your project needs)
+    index_name = "elevatedfx-index"  # Replace with your desired index name
 
-# Check if the index already exists, create if it doesn’t
-if index_name not in pc.list_indexes().names():
-    pc.create_index(
-        name=index_name,
-        dimension=1536,  # Typical for OpenAI embeddings
-        metric="euclidean",  # Choose a suitable metric
-        spec=ServerlessSpec(cloud="aws", region=PINECONE_ENVIRONMENT)  # Adjust region as needed
-    )
+    # Check if the index already exists, create if it doesn’t
+    if index_name not in pc.list_indexes().names():
+        pc.create_index(
+            name=index_name,
+            dimension=1536,  # Typical for OpenAI embeddings
+            metric="euclidean",  # Choose a suitable metric
+            spec=ServerlessSpec(cloud="aws", region=PINECONE_ENVIRONMENT)  # Adjust region as needed
+        )
+except Exception as e:
+    print(f"Error initializing Pinecone: {e}")
 
 # Run the bot
 bot.run(DISCORD_TOKEN)
