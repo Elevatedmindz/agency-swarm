@@ -1,1 +1,1 @@
-from .Devid import Devid
+from .ScoutAgent import ScoutAgent
