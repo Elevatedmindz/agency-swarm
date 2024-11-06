@@ -32,21 +32,24 @@ aiden_agent = AidenAgent()
 ace_agent = AceAgent()
 scout_agent = ScoutAgent()
 
-# Define an Agency for managing communication flow between agents
+# Define an agency_chart with the appropriate hierarchy or communication flow
+agency_chart = [
+    shadow_agent,  # Main agent who coordinates
+    [shadow_agent, echo_agent],  # Shadow communicates with Echo
+    [shadow_agent, lyra_agent],  # Shadow communicates with Lyra
+    [shadow_agent, eve_agent],  # Shadow communicates with Eve
+    [shadow_agent, nova_agent],  # Shadow communicates with Nova
+    [shadow_agent, miles_agent],  # Shadow communicates with Miles
+    [shadow_agent, aiden_agent],  # Shadow communicates with Aiden
+    [shadow_agent, ace_agent],  # Shadow communicates with Ace
+    [shadow_agent, scout_agent]  # Shadow communicates with Scout
+]
+
+# Initialize the Agency with the defined agency_chart
 agency = Agency(
+    agency_chart=agency_chart,
     shared_instructions="Guidelines for managing tasks and coordinating cross-agent interactions."
 )
-
-# Add agents to the agency after initialization
-agency.add_agent(shadow_agent)
-agency.add_agent(echo_agent)
-agency.add_agent(lyra_agent)
-agency.add_agent(eve_agent)
-agency.add_agent(nova_agent)
-agency.add_agent(miles_agent)
-agency.add_agent(aiden_agent)
-agency.add_agent(ace_agent)
-agency.add_agent(scout_agent)
 
 # Define trigger phrases for proactive help
 trigger_phrases = [
