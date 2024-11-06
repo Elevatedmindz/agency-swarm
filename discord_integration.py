@@ -34,9 +34,19 @@ scout_agent = ScoutAgent()
 
 # Define an Agency for managing communication flow between agents
 agency = Agency(
-    agents=[shadow_agent, echo_agent, lyra_agent, eve_agent, nova_agent, miles_agent, aiden_agent, ace_agent, scout_agent],
     shared_instructions="Guidelines for managing tasks and coordinating cross-agent interactions."
 )
+
+# Add agents to the agency after initialization
+agency.add_agent(shadow_agent)
+agency.add_agent(echo_agent)
+agency.add_agent(lyra_agent)
+agency.add_agent(eve_agent)
+agency.add_agent(nova_agent)
+agency.add_agent(miles_agent)
+agency.add_agent(aiden_agent)
+agency.add_agent(ace_agent)
+agency.add_agent(scout_agent)
 
 # Define trigger phrases for proactive help
 trigger_phrases = [
