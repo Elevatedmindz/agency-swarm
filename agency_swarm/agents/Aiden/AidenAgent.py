@@ -1,43 +1,28 @@
+from agency_swarm.agents import Agent
+from agency_swarm.tools import SchedulingTool, ContentCalendarTool  # Replace with actual tools as necessary
 from typing_extensions import override
 import re
-from agency_swarm.agents import Agent
-from agency_swarm.tools import FileSearch
-from agency_swarm.util.validators import llm_validator
 
-
-class Devid(Agent):
+class AidenAgent(Agent):
     def __init__(self):
         super().__init__(
-            name="Devid",
-            description="Devid is an AI software engineer capable of performing advanced coding tasks.",
+            name="Aiden",
+            description="Aiden manages marketing tasks and schedules content for timely distribution.",
             instructions="./instructions.md",
             files_folder="./files",
             schemas_folder="./schemas",
-            tools=[FileSearch],
+            tools=[SchedulingTool, ContentCalendarTool],  # Replace with appropriate tools
             tools_folder="./tools",
             validation_attempts=1,
-            temperature=0,
-            max_prompt_tokens=25000,
+            temperature=0.8,
+            max_prompt_tokens=1200,
         )
 
     @override
     def response_validator(self, message):
-        pattern = r'(```)((.*\n){5,})(```)'
-
-        if re.search(pattern, message):
-            # take only first 100 characters
-            raise ValueError(
-                "You returned code snippet. Please never return code snippets to me. "
-                "Use the FileWriter tool to write the code locally. Then, test it if possible. Continue."
-            )
-
-        llm_validator(statement="Verify whether the update from the AI Developer Agent confirms the task's "
-                                "successful completion. If the task remains unfinished, provide guidance "
-                                "within the 'reason' argument on the next steps the agent should take. For "
-                                "instance, if the agent encountered an error, advise the inclusion of debug "
-                                "statements for another attempt. Should the agent outline potential "
-                                "solutions or further actions, direct the agent to execute those plans. "
-                                "Message does not have to contain code snippets. Just confirmation.",
-                      client=self.client)(message)
+        pattern = r'(schedule|content|marketing|campaign)'
+        
+        if not re.search(pattern, message, re.IGNORECASE):
+            raise ValueError("Response did not address the scheduling or marketing requirements. Please ensure your response is focused on relevant tasks.")
 
         return message
