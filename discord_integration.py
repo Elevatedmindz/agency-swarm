@@ -21,6 +21,13 @@ NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 PINECONE_ENVIRONMENT = os.getenv("PINECONE_ENVIRONMENT")
 
+# Verify environment variables
+if not DISCORD_TOKEN:
+    print("ERROR: DISCORD_TOKEN is missing. Check your environment variables.")
+    exit(1)
+else:
+    print("DISCORD_TOKEN is loaded.")
+
 # Initialize specific agents for Discord roles
 shadow_agent = ShadowAgent()
 echo_agent = EchoAgent()
@@ -34,36 +41,29 @@ scout_agent = ScoutAgent()
 
 # Define an agency_chart with the appropriate hierarchy or communication flow
 agency_chart = [
-    shadow_agent,  # Main agent who coordinates
-    [shadow_agent, echo_agent],  # Shadow communicates with Echo
-    [shadow_agent, lyra_agent],  # Shadow communicates with Lyra
-    [shadow_agent, eve_agent],  # Shadow communicates with Eve
-    [shadow_agent, nova_agent],  # Shadow communicates with Nova
-    [shadow_agent, miles_agent],  # Shadow communicates with Miles
-    [shadow_agent, aiden_agent],  # Shadow communicates with Aiden
-    [shadow_agent, ace_agent],  # Shadow communicates with Ace
-    [shadow_agent, scout_agent]  # Shadow communicates with Scout
+    shadow_agent,
+    [shadow_agent, echo_agent],
+    [shadow_agent, lyra_agent],
+    [shadow_agent, eve_agent],
+    [shadow_agent, nova_agent],
+    [shadow_agent, miles_agent],
+    [shadow_agent, aiden_agent],
+    [shadow_agent, ace_agent],
+    [shadow_agent, scout_agent]
 ]
 
-# Initialize the Agency with the defined agency_chart
+# Initialize the Agency
 agency = Agency(
     agency_chart=agency_chart,
     shared_instructions="Guidelines for managing tasks and coordinating cross-agent interactions."
 )
+print("Agency initialized with chart and shared instructions.")
 
 # Define trigger phrases for proactive help
 trigger_phrases = [
-    "I need help",
-    "when is the next live call",
-    "trading psychology",
-    "mindset",
-    "community event",
-    "how do I",
-    "content creation",
-    "data analysis",
-    "marketing",
-    "project management",
-    "market analysis"
+    "I need help", "when is the next live call", "trading psychology", "mindset",
+    "community event", "how do I", "content creation", "data analysis",
+    "marketing", "project management", "market analysis"
 ]
 
 # Discord bot setup with relevant intents
@@ -74,33 +74,35 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f'Logged in as {bot.user} - Ready to serve!')
+    print(f'Bot logged in as {bot.user}. Ready to serve!')
 
 @bot.event
 async def on_message(message):
-    print(f"Message received: {message.content}")  # Log every message the bot receives
+    print(f"Received message from {message.author}: {message.content}")
 
     if message.author == bot.user:
         return
 
-    try:
-        # Check for direct mention of Shadow and proactive help
-        response = None
-        if bot.user.mentioned_in(message):
-            print("Shadow agent directly mentioned.")
-            response = await shadow_agent.process_input(message.content)
-        elif any(phrase in message.content.lower() for phrase in trigger_phrases):
-            print("Proactive trigger phrase detected.")
-            response = await shadow_agent.process_input(message.content)
+    user_question = message.content.lower()
+    response = None
 
-        # Send the response if one was generated
+    try:
+        async with message.channel.typing():
+            if bot.user.mentioned_in(message):
+                print("Bot was mentioned directly.")
+                response = await shadow_agent.process_input(user_question)
+            elif any(phrase in user_question for phrase in trigger_phrases):
+                print("Trigger phrase detected.")
+                response = await shadow_agent.process_input(user_question)
+
         if response:
+            print(f"Sending response: {response}")
             await message.channel.send(response)
         else:
-            print("No response generated for the message.")
+            print("No response generated.")
     
     except Exception as e:
-        print(f"Error in on_message processing: {e}")
+        print(f"Error processing message: {e}")
 
 # Initialize Pinecone with improved error handling
 try:
@@ -114,8 +116,10 @@ try:
             metric="euclidean",
             spec=ServerlessSpec(cloud="aws", region=PINECONE_ENVIRONMENT)
         )
+    print("Pinecone initialized successfully.")
 except Exception as e:
     print(f"Error initializing Pinecone: {e}")
 
 # Run the bot
+print("Starting Discord bot...")
 bot.run(DISCORD_TOKEN)
