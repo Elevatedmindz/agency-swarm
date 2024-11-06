@@ -11,7 +11,7 @@ class AidenAgent(Agent):
             instructions="./instructions.md",
             files_folder="./files",
             schemas_folder="./schemas",
-            tools=[SchedulingTool, ContentCalendarTool],  # Replace with appropriate tools
+            tools=[],  # Tools can be added in the next phase
             tools_folder="./tools",
             validation_attempts=1,
             temperature=0.8,
