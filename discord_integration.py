@@ -78,90 +78,33 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
+    print(f"Message received: {message.content}")  # Log every message the bot receives
+
     if message.author == bot.user:
         return
 
-    user_question = message.content.lower()
-    response = None
-
     try:
-        # Show typing indicator while generating a response
-        async with message.channel.typing():
-            # Directly respond if Shadow is mentioned
-            if bot.user.mentioned_in(message):
-                response = await shadow_agent.process_input(user_question)
+        # Check for direct mention of Shadow and proactive help
+        response = None
+        if bot.user.mentioned_in(message):
+            print("Shadow agent directly mentioned.")
+            response = await shadow_agent.process_input(message.content)
+        elif any(phrase in message.content.lower() for phrase in trigger_phrases):
+            print("Proactive trigger phrase detected.")
+            response = await shadow_agent.process_input(message.content)
 
-            # Check for proactive help based on trigger phrases
-            elif any(phrase in user_question for phrase in trigger_phrases):
-                if "help" in user_question or "support" in user_question:
-                    response = await echo_agent.process_input(
-                        f"{message.author.mention}, it seems you need some assistance. Echo is here to help!"
-                    )
-                elif "trading psychology" in user_question or "mindset" in user_question:
-                    response = await eve_agent.process_input(
-                        f"{message.author.mention}, it sounds like you're interested in trading psychology. Eve can offer insights on mindset and emotional support."
-                    )
-                elif "community" in user_question or "event" in user_question:
-                    response = await lyra_agent.process_input(
-                        f"{message.author.mention}, it looks like you're curious about community events! Lyra can provide more details on upcoming activities."
-                    )
-                elif "content creation" in user_question:
-                    response = await nova_agent.process_input(
-                        f"{message.author.mention}, need help with content creation? Nova has some ideas!"
-                    )
-                elif "data analysis" in user_question:
-                    response = await miles_agent.process_input(
-                        f"{message.author.mention}, looking for data insights? Miles can assist with analytics!"
-                    )
-                elif "marketing" in user_question:
-                    response = await aiden_agent.process_input(
-                        f"{message.author.mention}, let's talk marketing. Aiden is here to plan your next big move!"
-                    )
-                elif "market analysis" in user_question:
-                    response = await ace_agent.process_input(
-                        f"{message.author.mention}, interested in market trends? Ace has got the insights!"
-                    )
-                elif "project management" in user_question:
-                    response = await scout_agent.process_input(
-                        f"{message.author.mention}, need help with organizing tasks? Scout is here to manage projects!"
-                    )
-                else:
-                    response = await shadow_agent.process_input(
-                        f"{message.author.mention}, how can I assist you today?"
-                    )
-
-            # If no specific phrase, use context-based delegation
-            elif "support" in user_question or "help" in user_question:
-                response = await echo_agent.process_input(user_question)
-            elif "psychology" in user_question or "mindset" in user_question:
-                response = await eve_agent.process_input(user_question)
-            elif "community" in user_question or "event" in user_question:
-                response = await lyra_agent.process_input(user_question)
-            elif "content creation" in user_question:
-                response = await nova_agent.process_input(user_question)
-            elif "data analysis" in user_question:
-                response = await miles_agent.process_input(user_question)
-            elif "marketing" in user_question:
-                response = await aiden_agent.process_input(user_question)
-            elif "market analysis" in user_question:
-                response = await ace_agent.process_input(user_question)
-            elif "project management" in user_question:
-                response = await scout_agent.process_input(user_question)
-            else:
-                response = await shadow_agent.process_input(user_question)
-
-        # Send the response if any was generated
+        # Send the response if one was generated
         if response:
             await message.channel.send(response)
+        else:
+            print("No response generated for the message.")
     
     except Exception as e:
-        print(f"Error processing message: {e}")
+        print(f"Error in on_message processing: {e}")
 
 # Initialize Pinecone with improved error handling
 try:
     pc = Pinecone(api_key=PINECONE_API_KEY)
-
-    # Example: Creating a Pinecone index
     index_name = "elevatedfx-index"
 
     if index_name not in pc.list_indexes().names():
