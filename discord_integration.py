@@ -2,7 +2,7 @@ import os
 import discord
 from discord.ext import commands
 from agency_swarm import Agent, Agency
-from pinecone import Pinecone, ServerlessSpec  # Updated import
+import pinecone
 
 # Load environment variables directly from Render’s environment
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
@@ -125,18 +125,17 @@ async def on_message(message):
         print(f"Error processing message: {e}")
 
 # Initialize Pinecone
-pc = Pinecone(api_key=PINECONE_API_KEY)
+pinecone.init(api_key=PINECONE_API_KEY, environment=PINECONE_ENVIRONMENT)
 
 # Example: Creating a Pinecone index (you can adjust based on your project needs)
 index_name = "elevatedfx-index"  # Replace with your desired index name
 
 # Check if the index already exists, create if it doesn’t
-if index_name not in pc.list_indexes().names():
-    pc.create_index(
+if index_name not in pinecone.list_indexes():
+    pinecone.create_index(
         name=index_name,
         dimension=1536,  # Typical for OpenAI embeddings
-        metric="euclidean",  # Choose a suitable metric
-        spec=ServerlessSpec(cloud="aws", region="us-east-1")  # Adjust region as needed
+        metric="euclidean"  # Choose a suitable metric
     )
 
 # Run the bot
