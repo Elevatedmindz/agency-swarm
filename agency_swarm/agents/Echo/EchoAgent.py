@@ -1,5 +1,4 @@
 from agency_swarm.agents import Agent
-from agency_swarm.tools import FAQTool, SupportTicketTool  # Replace with actual tools as necessary
 from typing_extensions import override
 import re
 
@@ -11,7 +10,7 @@ class EchoAgent(Agent):
             instructions="./instructions.md",
             files_folder="./files",
             schemas_folder="./schemas",
-            tools=[FAQTool, SupportTicketTool],  # Replace with appropriate tools
+            tools=[],  # Tools can be added in the next phase
             tools_folder="./tools",
             validation_attempts=1,
             temperature=0.7,
