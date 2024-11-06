@@ -1,8 +1,12 @@
 import os
 import discord
 from discord.ext import commands
-from agency_swarm import Agent, Agency
-from pinecone import Pinecone, ServerlessSpec  # Updated import
+from agency_swarm import Agency
+from agency_swarm.agents.Shadow.ShadowAgent import ShadowAgent
+from agency_swarm.agents.Echo.EchoAgent import EchoAgent
+from agency_swarm.agents.Lyra.LyraAgent import LyraAgent
+from agency_swarm.agents.Eve.EveAgent import EveAgent
+from pinecone import Pinecone, ServerlessSpec
 
 # Load environment variables directly from Render’s environment
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
@@ -12,42 +16,15 @@ NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 PINECONE_ENVIRONMENT = os.getenv("PINECONE_ENVIRONMENT")
 
-# Define roles for Discord-based agents
-roles = {
-    "lead_assistant": "Lead Operations Coordinator",
-    "customer_support": "Customer Support Specialist",
-    "community_engagement": "Community Engagement",
-    "trade_psychologist": "Trading Psychology Support"
-}
+# Initialize specific agents for Discord roles
+shadow_agent = ShadowAgent()
+echo_agent = EchoAgent()
+lyra_agent = LyraAgent()
+eve_agent = EveAgent()
 
-# Initialize Discord agents
-shadow_agent = Agent(
-    name="Shadow",
-    description=roles["lead_assistant"],
-    instructions="Manage user interactions and guide through ElevatedFX resources."
-)
-
-echo_agent = Agent(
-    name="Echo",
-    description=roles["customer_support"],
-    instructions="Handle all customer queries and assist with platform navigation."
-)
-
-lyra_agent = Agent(
-    name="Lyra",
-    description=roles["community_engagement"],
-    instructions="Engage with the community, share updates, and foster interactions on Discord."
-)
-
-eve_agent = Agent(
-    name="Eve",
-    description=roles["trade_psychologist"],
-    instructions="Assist users with trading psychology, provide emotional support, and offer mindset advice."
-)
-
-# Define an Agency for managing communication flow
+# Define an Agency for managing communication flow between agents
 agency = Agency(
-    [shadow_agent, echo_agent, lyra_agent, eve_agent],
+    agents=[shadow_agent, echo_agent, lyra_agent, eve_agent],
     shared_instructions="Guidelines for managing tasks and coordinating cross-agent interactions."
 )
 
@@ -61,7 +38,7 @@ trigger_phrases = [
     "how do I"
 ]
 
-# Discord bot setup
+# Discord bot setup with relevant intents
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
@@ -82,11 +59,11 @@ async def on_message(message):
     try:
         # Show typing indicator while generating a response
         async with message.channel.typing():
-            # If Shadow is mentioned (@Shadow), respond directly
+            # Directly respond if Shadow is mentioned
             if bot.user.mentioned_in(message):
                 response = await shadow_agent.process_input(user_question)
 
-            # Check if the message contains a trigger phrase for proactive help
+            # Check for proactive help based on trigger phrases
             elif any(phrase in user_question for phrase in trigger_phrases):
                 if "help" in user_question or "support" in user_question:
                     response = await echo_agent.process_input(
@@ -101,20 +78,18 @@ async def on_message(message):
                         f"{message.author.mention}, it looks like you're curious about community events! Lyra can provide more details on upcoming activities."
                     )
                 else:
-                    # Default response if no specific role is identified
                     response = await shadow_agent.process_input(
                         f"{message.author.mention}, how can I assist you today?"
                     )
 
-            # Default delegation for Shadow based on detected context
+            # If no specific phrase, use context-based delegation
             elif "support" in user_question or "help" in user_question:
-                response = await echo_agent.process_input(user_question)  # Customer support via Echo
+                response = await echo_agent.process_input(user_question)
             elif "psychology" in user_question or "mindset" in user_question:
-                response = await eve_agent.process_input(user_question)  # Trading psychology via Eve
+                response = await eve_agent.process_input(user_question)
             elif "community" in user_question or "event" in user_question:
-                response = await lyra_agent.process_input(user_question)  # Community engagement via Lyra
+                response = await lyra_agent.process_input(user_question)
             else:
-                # If no specific context, Shadow handles the response
                 response = await shadow_agent.process_input(user_question)
 
         # Send the response if any was generated
@@ -124,20 +99,19 @@ async def on_message(message):
     except Exception as e:
         print(f"Error processing message: {e}")
 
-# Initialize Pinecone
+# Initialize Pinecone with improved error handling
 try:
     pc = Pinecone(api_key=PINECONE_API_KEY)
 
-    # Example: Creating a Pinecone index (you can adjust based on your project needs)
-    index_name = "elevatedfx-index"  # Replace with your desired index name
+    # Example: Creating a Pinecone index
+    index_name = "elevatedfx-index"
 
-    # Check if the index already exists, create if it doesn’t
     if index_name not in pc.list_indexes().names():
         pc.create_index(
             name=index_name,
-            dimension=1536,  # Typical for OpenAI embeddings
-            metric="euclidean",  # Choose a suitable metric
-            spec=ServerlessSpec(cloud="aws", region=PINECONE_ENVIRONMENT)  # Adjust region as needed
+            dimension=1536,
+            metric="euclidean",
+            spec=ServerlessSpec(cloud="aws", region=PINECONE_ENVIRONMENT)
         )
 except Exception as e:
     print(f"Error initializing Pinecone: {e}")
