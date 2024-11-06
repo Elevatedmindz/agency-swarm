@@ -13,7 +13,7 @@ class ShadowAgent(Agent):
             instructions="./instructions.md",
             files_folder="./files",
             schemas_folder="./schemas",
-            tools=[FileSearch],
+            tools=[AirtableHubTool, N8NWorkflowTool],
             tools_folder="./tools",
             validation_attempts=1,
             temperature=0.5,  # Adjusted for a more conversational tone

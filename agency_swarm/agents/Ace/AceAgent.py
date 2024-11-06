@@ -8,10 +8,10 @@ class AceAgent(Agent):
             name="Ace",
             description="Ace specializes in market analysis, tracking trends, and providing insights.",
             instructions="./instructions.md",
-            files_folder="./files",
-            schemas_folder="./schemas",
+            files_folder=None,
+            schemas_folder=None,
             tools=[],  # Tools can be added in the next phase
-            tools_folder="./tools",
+            tools_folder=None,
             validation_attempts=1,
             temperature=0.7,
             max_prompt_tokens=1500,

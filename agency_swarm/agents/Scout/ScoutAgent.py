@@ -8,10 +8,10 @@ class ScoutAgent(Agent):
             name="Scout",
             description="Scout is the Project Management Agent responsible for task assignment, project tracking, and timeline management.",
             instructions="./instructions.md",
-            files_folder="./files",
-            schemas_folder="./schemas",
+            files_folder=None,
+            schemas_folder=None,
             tools=[],  # Add relevant tools if needed later
-            tools_folder="./tools",
+            tools_folder=None,
             validation_attempts=1,
             temperature=0.5,
             max_prompt_tokens=2000,

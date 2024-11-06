@@ -8,10 +8,10 @@ class EchoAgent(Agent):
             name="Echo",
             description="Echo specializes in customer support, assisting users with inquiries and troubleshooting issues.",
             instructions="./instructions.md",
-            files_folder="./files",
-            schemas_folder="./schemas",
+            files_folder=None,
+            schemas_folder=None,
             tools=[],  # Tools can be added in the next phase
-            tools_folder="./tools",
+            tools_folder=None,
             validation_attempts=1,
             temperature=0.7,
             max_prompt_tokens=1500,
