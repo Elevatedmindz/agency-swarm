@@ -1,5 +1,7 @@
 import os
 import discord
+import traceback
+import asyncio
 from discord.ext import commands
 from agency_swarm import Agency
 from agency_swarm.agents.Shadow.ShadowAgent import ShadowAgent
@@ -13,33 +15,48 @@ from agency_swarm.agents.Ace.AceAgent import AceAgent
 from agency_swarm.agents.Scout.ScoutAgent import ScoutAgent
 from pinecone import Pinecone, ServerlessSpec
 
-# Load environment variables directly from Render’s environment
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-NOTION_TOKEN = os.getenv("NOTION_TOKEN")
-NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
-PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-PINECONE_ENVIRONMENT = os.getenv("PINECONE_ENVIRONMENT")
+# Enhanced logging setup
+import logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-# Verify environment variables
-if not DISCORD_TOKEN:
-    print("ERROR: DISCORD_TOKEN is missing. Check your environment variables.")
+# Load and verify environment variables
+required_env_vars = {
+    "DISCORD_TOKEN": os.getenv("DISCORD_TOKEN"),
+    "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
+    "NOTION_TOKEN": os.getenv("NOTION_TOKEN"),
+    "NOTION_DATABASE_ID": os.getenv("NOTION_DATABASE_ID"),
+    "PINECONE_API_KEY": os.getenv("PINECONE_API_KEY"),
+    "PINECONE_ENVIRONMENT": os.getenv("PINECONE_ENVIRONMENT")
+}
+
+for var_name, value in required_env_vars.items():
+    if not value:
+        logger.error(f"ERROR: {var_name} is missing. Check your environment variables.")
+        exit(1)
+    logger.info(f"{var_name} is loaded successfully.")
+
+# Initialize agents with error handling
+try:
+    shadow_agent = ShadowAgent()
+    echo_agent = EchoAgent()
+    lyra_agent = LyraAgent()
+    eve_agent = EveAgent()
+    nova_agent = NovaAgent()
+    miles_agent = MilesAgent()
+    aiden_agent = AidenAgent()
+    ace_agent = AceAgent()
+    scout_agent = ScoutAgent()
+    logger.info("All agents initialized successfully")
+except Exception as e:
+    logger.error(f"Error initializing agents: {str(e)}")
+    logger.error(traceback.format_exc())
     exit(1)
-else:
-    print("DISCORD_TOKEN is loaded.")
 
-# Initialize specific agents for Discord roles
-shadow_agent = ShadowAgent()
-echo_agent = EchoAgent()
-lyra_agent = LyraAgent()
-eve_agent = EveAgent()
-nova_agent = NovaAgent()
-miles_agent = MilesAgent()
-aiden_agent = AidenAgent()
-ace_agent = AceAgent()
-scout_agent = ScoutAgent()
-
-# Define an agency_chart with the appropriate hierarchy or communication flow
+# Define agency chart
 agency_chart = [
     shadow_agent,
     [shadow_agent, echo_agent],
@@ -52,21 +69,26 @@ agency_chart = [
     [shadow_agent, scout_agent]
 ]
 
-# Initialize the Agency
-agency = Agency(
-    agency_chart=agency_chart,
-    shared_instructions="Guidelines for managing tasks and coordinating cross-agent interactions."
-)
-print("Agency initialized with chart and shared instructions.")
+# Initialize Agency with error handling
+try:
+    agency = Agency(
+        agency_chart=agency_chart,
+        shared_instructions="Guidelines for managing tasks and coordinating cross-agent interactions."
+    )
+    logger.info("Agency initialized successfully")
+except Exception as e:
+    logger.error(f"Error initializing agency: {str(e)}")
+    logger.error(traceback.format_exc())
+    exit(1)
 
-# Define trigger phrases for proactive help
+# Define trigger phrases
 trigger_phrases = [
     "I need help", "when is the next live call", "trading psychology", "mindset",
     "community event", "how do I", "content creation", "data analysis",
     "marketing", "project management", "market analysis"
 ]
 
-# Discord bot setup with relevant intents
+# Discord bot setup
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
@@ -74,52 +96,88 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f'Bot logged in as {bot.user}. Ready to serve!')
+    logger.info(f'Bot logged in as {bot.user}')
+    logger.info(f'Bot is connected to the following guilds:')
+    for guild in bot.guilds:
+        logger.info(f'- {guild.name} (id: {guild.id})')
+
+async def process_message_with_timeout(agent, question, timeout=30):
+    """Process message with timeout to prevent hanging"""
+    try:
+        response = await asyncio.wait_for(
+            agent.process_input(question),
+            timeout=timeout
+        )
+        return response
+    except asyncio.TimeoutError:
+        logger.error(f"Processing timed out after {timeout} seconds")
+        return "I apologize, but the response took too long to generate. Please try again."
+    except Exception as e:
+        logger.error(f"Error processing message: {str(e)}")
+        logger.error(traceback.format_exc())
+        return None
 
 @bot.event
 async def on_message(message):
-    print(f"Received message from {message.author}: {message.content}")
-
     if message.author == bot.user:
         return
 
+    logger.info(f"Received message from {message.author} in {message.channel}: {message.content}")
     user_question = message.content.lower()
     response = None
 
     try:
-        async with message.channel.typing():
-            if bot.user.mentioned_in(message):
-                print("Bot was mentioned directly.")
-                response = await shadow_agent.process_input(user_question)
-            elif any(phrase in user_question for phrase in trigger_phrases):
-                print("Trigger phrase detected.")
-                response = await shadow_agent.process_input(user_question)
+        should_respond = False
+        if bot.user.mentioned_in(message):
+            logger.info("Bot was mentioned directly")
+            should_respond = True
+        elif any(phrase in user_question for phrase in trigger_phrases):
+            logger.info(f"Trigger phrase detected: {[phrase for phrase in trigger_phrases if phrase in user_question]}")
+            should_respond = True
 
-        if response:
-            print(f"Sending response: {response}")
-            await message.channel.send(response)
-        else:
-            print("No response generated.")
-    
+        if should_respond:
+            async with message.channel.typing():
+                logger.info("Processing message with shadow_agent")
+                response = await process_message_with_timeout(shadow_agent, user_question)
+                
+                if response:
+                    logger.info(f"Generated response: {response[:100]}...")  # Log first 100 chars
+                    await message.channel.send(response)
+                else:
+                    logger.warning("No response generated")
+                    await message.channel.send("I apologize, but I encountered an error processing your request. Please try again.")
+
     except Exception as e:
-        print(f"Error processing message: {e}")
+        logger.error(f"Error in message handling: {str(e)}")
+        logger.error(traceback.format_exc())
+        try:
+            await message.channel.send("I encountered an error processing your message. Please try again later.")
+        except:
+            logger.error("Failed to send error message to channel")
 
-# Initialize Pinecone with improved error handling
+# Initialize Pinecone with error handling
 try:
-    pc = Pinecone(api_key=PINECONE_API_KEY)
+    pc = Pinecone(api_key=required_env_vars["PINECONE_API_KEY"])
     index_name = "elevatedfx-index"
 
     if index_name not in pc.list_indexes().names():
+        logger.info(f"Creating new Pinecone index: {index_name}")
         pc.create_index(
             name=index_name,
             dimension=1536,
             metric="euclidean",
-            spec=ServerlessSpec(cloud="aws", region=PINECONE_ENVIRONMENT)
+            spec=ServerlessSpec(cloud="aws", region=required_env_vars["PINECONE_ENVIRONMENT"])
         )
-    print("Pinecone initialized successfully.")
+    logger.info("Pinecone initialized successfully")
 except Exception as e:
-    print(f"Error initializing Pinecone: {e}")
+    logger.error(f"Error initializing Pinecone: {str(e)}")
+    logger.error(traceback.format_exc())
+    # Continue without Pinecone as it might not be critical for core functionality
 
-# Run the bot
-print("Starting Discord bot...")
-bot.run(DISCORD_TOKEN)
+# Run the bot with error handling
+logger.info("Starting Discord bot...")
+try:
+    bot.run(required_env_vars["DISCORD_TOKEN"])
+except Exception as e:
+    logger.error(f"Failed to start bot: {str(e)}")
+    logger.error(traceback.format_exc())
